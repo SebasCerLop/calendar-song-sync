@@ -3,6 +3,13 @@
 A local Python API that reads calendar events, identifies the current activity,
 and opens a YouTube Music search for a selected tag.
 
+## Introduction
+
+Calendar Song Sync connects scheduled activities with music discovery. This
+first Python/FastAPI milestone looks up the active calendar event and makes it
+easy to open a YouTube Music search for its activity. Music searches are
+triggered explicitly; this version does not start playback automatically.
+
 ## Features
 
 - Read an iCalendar (`.ics`) file or an iCalendar feed URL.
