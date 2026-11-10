@@ -1,7 +1,10 @@
 from urllib.parse import urlencode
 import webbrowser
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from src.calendar_sync import create_calendar_sync
@@ -9,10 +12,23 @@ from src.calendar_sync import create_calendar_sync
 
 app = FastAPI(title="Calendar Song Sync API", version="1.0")
 calendar_sync = create_calendar_sync()
+static_directory = Path(__file__).resolve().parent / "static"
+app.mount("/static", StaticFiles(directory=static_directory), name="static")
 
 
 class MediaRequest(BaseModel):
     tag: str = Field(min_length=1, max_length=100)
+
+
+@app.get("/", include_in_schema=False)
+def dashboard() -> FileResponse:
+    return FileResponse(static_directory / "index.html")
+
+
+@app.get("/api/events")
+def get_events() -> dict:
+    """Return events from the configured calendar."""
+    return calendar_sync.get_events()
 
 
 @app.get("/api/current-activity")

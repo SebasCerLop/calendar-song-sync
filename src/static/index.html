@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f7f3">
+  <title>Calendar Song Sync</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+  <script src="/static/appearance.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Calendar Song Sync home">
+        <span class="brand-icon" aria-hidden="true">&#9835;</span>
+        <span><strong>calendar<span class="brand-accent">.</span></strong><small>SONG SYNC</small></span>
+      </a>
+      <div class="topbar-right">
+        <span class="topbar-note"><span class="status-dot"></span> Your time, in tune</span>
+        <details class="appearance">
+          <summary class="appearance-trigger">Appearance <span aria-hidden="true">&#10022;</span></summary>
+          <div class="appearance-panel">
+            <div class="appearance-heading"><span class="section-label">MAKE IT YOURS</span><strong>Set the mood.</strong></div>
+            <fieldset>
+              <legend>Color theme</legend>
+              <div class="appearance-options">
+                <label><input type="radio" name="theme" value="sage" checked><span class="swatch sage"></span> Sage</label>
+                <label><input type="radio" name="theme" value="ocean"><span class="swatch ocean"></span> Ocean</label>
+                <label><input type="radio" name="theme" value="rose"><span class="swatch rose"></span> Rose</label>
+                <label><input type="radio" name="theme" value="midnight"><span class="swatch midnight"></span> Midnight</label>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend>Background</legend>
+              <div class="appearance-options background-options">
+                <label><input type="radio" name="background" value="plain" checked> Plain</label>
+                <label><input type="radio" name="background" value="gradient"> Gradient</label>
+                <label><input type="radio" name="background" value="image" disabled> My image</label>
+              </div>
+              <label class="upload-label" for="background-image">Choose an image</label>
+              <input id="background-image" type="file" accept="image/png,image/jpeg,image/webp" aria-describedby="image-help">
+              <p id="image-help" class="appearance-help">PNG, JPEG or WebP, up to 1 MB. Saved in this browser only.</p>
+              <button id="remove-image" class="remove-image" type="button" disabled>Remove image</button>
+            </fieldset>
+            <p id="appearance-status" class="appearance-status" role="status" aria-live="polite"></p>
+          </div>
+        </details>
+        <a class="docs-link" href="/docs">API docs <span aria-hidden="true">&#8599;</span></a>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro">
+        <div>
+          <div class="eyebrow"><span class="eyebrow-line"></span> YOUR PERSONAL RHYTHM</div>
+          <h1>Make time for <em>everything.</em></h1>
+          <p>A little more intention for every part of your day.</p>
+        </div>
+        <div class="intro-decoration" aria-hidden="true"><span>&#10038;</span><span>&#9834;</span></div>
+      </section>
+
+      <div id="notice" class="notice" role="status" hidden></div>
+      <div class="dashboard">
+        <section class="calendar-card" aria-labelledby="month-title">
+          <div class="card-heading">
+            <div><div class="section-label">YOUR CALENDAR <span>&#10022;</span></div>
+              <h2 id="month-title" aria-live="polite"></h2>
+            </div>
+            <div class="calendar-controls">
+              <button id="today" class="today-button" type="button">Today</button>
+              <button id="prev" class="icon-button" type="button" aria-label="Previous month">&#8592;</button>
+              <button id="next" class="icon-button" type="button" aria-label="Next month">&#8594;</button>
+            </div>
+          </div>
+          <div class="weekdays" aria-hidden="true">
+            <span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span>
+          </div>
+          <div id="calendar" class="calendar-grid" aria-label="Calendar days"></div>
+          <div class="calendar-footer"><span><span class="legend-dot"></span> An event is planned</span><span>Take it day by day <span aria-hidden="true">&#10035;</span></span></div>
+        </section>
+
+        <aside class="sidebar">
+          <section class="activity-card">
+            <div class="activity-top"><span class="section-label">RIGHT NOW</span><span class="live-pill"><span></span> LIVE</span></div>
+            <div class="activity-icon" aria-hidden="true">&#9835;</div>
+            <h2 id="activity">Checking in...</h2>
+            <p id="activity-tag">Finding your rhythm</p>
+            <button id="music" type="button" disabled><span aria-hidden="true">&#9654;</span> Find my soundtrack <span aria-hidden="true">&#8599;</span></button>
+            <p id="music-status" class="music-status" role="status"></p>
+          </section>
+
+          <section class="agenda-card" aria-labelledby="agenda-title">
+            <div class="agenda-top"><div><div class="section-label">THE LINEUP</div><h2 id="agenda-title">Your day</h2></div><span class="agenda-sparkle" aria-hidden="true">&#10037;</span></div>
+            <p id="selected-date" class="selected-date"></p>
+            <div id="agenda" class="agenda-list" aria-live="polite"></div>
+          </section>
+          <p class="sidebar-footer">A little structure. A lot of soul. <span aria-hidden="true">&#9829;</span></p>
+        </aside>
+      </div>
+      <footer class="page-footer"><span>CALENDAR SONG SYNC</span><span>MADE FOR YOUR MOMENTS &#10022;</span></footer>
+    </main>
+  </div>
+</body>
+</html>

@@ -52,6 +52,31 @@ class CalendarSync:
             return value.replace(tzinfo=local_timezone)
         return value
 
+    def get_events(self) -> dict:
+        calendar = self._read_calendar()
+        events = []
+        has_recurring_events = False
+        for event in calendar.events:
+            if event.begin is None or event.end is None:
+                continue
+            if any(line.name == "RRULE" for line in event.extra):
+                has_recurring_events = True
+            activity = event.name or "Untitled event"
+            all_day = event.all_day
+            events.append({
+                "title": activity,
+                "tag": self._get_tag(activity, event.categories),
+                "start": event.begin.format("YYYY-MM-DD") if all_day else event.begin.isoformat(),
+                "end": event.end.format("YYYY-MM-DD") if all_day else event.end.isoformat(),
+                "all_day": all_day,
+            })
+        events.sort(key=lambda event: (event["start"], event["title"]))
+        return {
+            "configured": bool(self.calendar_url or self.calendar_file),
+            "events": events,
+            "has_recurring_events": has_recurring_events,
+        }
+
     def get_current_activity(self, now: Optional[datetime] = None) -> dict[str, str]:
         current_time = now or datetime.now().astimezone()
         if current_time.tzinfo is None:
@@ -62,11 +87,15 @@ class CalendarSync:
             if event.begin is None or event.end is None:
                 continue
 
-            start = self._as_local_datetime(
-                event.begin.datetime, current_time.tzinfo
-            )
-            end = self._as_local_datetime(event.end.datetime, current_time.tzinfo)
-            if start <= current_time < end:
+            if event.all_day:
+                active = event.begin.date() <= current_time.date() < event.end.date()
+            else:
+                start = self._as_local_datetime(
+                    event.begin.datetime, current_time.tzinfo
+                )
+                end = self._as_local_datetime(event.end.datetime, current_time.tzinfo)
+                active = start <= current_time < end
+            if active:
                 activity = event.name or "Untitled event"
                 return {
                     "activity": activity,
