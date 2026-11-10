@@ -1,0 +1,6 @@
+fastapi==0.115.0
+uvicorn==0.31.0
+ics==0.7.2
+tatsu<5.8
+python-vlc==3.0.21203
+requests==2.32.5
