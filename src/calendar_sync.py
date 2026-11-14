@@ -1,10 +1,11 @@
 import os
 import re
-from datetime import datetime, tzinfo
+from datetime import datetime, timedelta, tzinfo
 from pathlib import Path
 from typing import Iterable, Optional
 
 import requests
+from dateutil.rrule import rrulestr
 from ics import Calendar
 
 
@@ -52,25 +53,78 @@ class CalendarSync:
             return value.replace(tzinfo=local_timezone)
         return value
 
-    def get_events(self) -> dict:
-        calendar = self._read_calendar()
+    @staticmethod
+    def _recurrence_rule(event: object) -> Optional[str]:
+        for line in event.extra:
+            if line.name == "RRULE":
+                return line.value
+        return None
+
+    @classmethod
+    def _event_data(cls, event: object, start: datetime) -> dict:
+        activity = event.name or "Untitled event"
+        all_day = event.all_day
+        duration = event.end.datetime - event.begin.datetime
+        end = start + duration
+        return {
+            "title": activity,
+            "tag": cls._get_tag(activity, event.categories),
+            "start": start.strftime("%Y-%m-%d") if all_day else start.isoformat(),
+            "end": end.strftime("%Y-%m-%d") if all_day else end.isoformat(),
+            "all_day": all_day,
+        }
+
+    def _expanded_events(
+        self, calendar: Calendar, window_start: datetime, window_end: datetime
+    ) -> tuple[list[dict], bool]:
         events = []
         has_recurring_events = False
         for event in calendar.events:
             if event.begin is None or event.end is None:
                 continue
-            if any(line.name == "RRULE" for line in event.extra):
-                has_recurring_events = True
-            activity = event.name or "Untitled event"
-            all_day = event.all_day
-            events.append({
-                "title": activity,
-                "tag": self._get_tag(activity, event.categories),
-                "start": event.begin.format("YYYY-MM-DD") if all_day else event.begin.isoformat(),
-                "end": event.end.format("YYYY-MM-DD") if all_day else event.end.isoformat(),
-                "all_day": all_day,
-            })
+            start = event.begin.datetime
+            rule = self._recurrence_rule(event)
+            if not rule:
+                if event.all_day:
+                    in_window = (
+                        window_start.date() <= start.date() < window_end.date()
+                    )
+                else:
+                    comparable_start = self._as_local_datetime(
+                        start, window_start.tzinfo
+                    )
+                    in_window = window_start <= comparable_start < window_end
+                if in_window:
+                    events.append(self._event_data(event, start))
+                continue
+
+            has_recurring_events = True
+            recurrence = rrulestr(rule, dtstart=start)
+            recurrence_start = (
+                window_start.replace(tzinfo=None)
+                if start.tzinfo is None
+                else window_start
+            )
+            recurrence_end = (
+                window_end.replace(tzinfo=None)
+                if start.tzinfo is None
+                else window_end
+            )
+            occurrences = recurrence.between(recurrence_start, recurrence_end, inc=True)
+            events.extend(self._event_data(event, occurrence) for occurrence in occurrences)
         events.sort(key=lambda event: (event["start"], event["title"]))
+        return events, has_recurring_events
+
+    def get_events(self, now: Optional[datetime] = None) -> dict:
+        current_time = now or datetime.now().astimezone()
+        if current_time.tzinfo is None:
+            current_time = current_time.astimezone()
+        calendar = self._read_calendar()
+        window_start = current_time - timedelta(days=366)
+        window_end = current_time + timedelta(days=366)
+        events, has_recurring_events = self._expanded_events(
+            calendar, window_start, window_end
+        )
         return {
             "configured": bool(self.calendar_url or self.calendar_file),
             "events": events,
@@ -82,24 +136,22 @@ class CalendarSync:
         if current_time.tzinfo is None:
             current_time = current_time.astimezone()
 
-        calendar = self._read_calendar()
-        for event in calendar.events:
-            if event.begin is None or event.end is None:
-                continue
-
-            if event.all_day:
-                active = event.begin.date() <= current_time.date() < event.end.date()
+        events = self.get_events(current_time)["events"]
+        for event in events:
+            if event["all_day"]:
+                active = event["start"] <= current_time.date().isoformat() < event["end"]
             else:
                 start = self._as_local_datetime(
-                    event.begin.datetime, current_time.tzinfo
+                    datetime.fromisoformat(event["start"]), current_time.tzinfo
                 )
-                end = self._as_local_datetime(event.end.datetime, current_time.tzinfo)
+                end = self._as_local_datetime(
+                    datetime.fromisoformat(event["end"]), current_time.tzinfo
+                )
                 active = start <= current_time < end
             if active:
-                activity = event.name or "Untitled event"
                 return {
-                    "activity": activity,
-                    "tag": self._get_tag(activity, event.categories),
+                    "activity": event["title"],
+                    "tag": event["tag"],
                 }
 
         return {"activity": "Free Time", "tag": "Relax"}

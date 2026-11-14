@@ -113,7 +113,7 @@ async function loadCalendar() {
     events = data.events;
     const notices = [];
     if (!data.configured) notices.push("No calendar connected yet. Set CALENDAR_FILE or CALENDAR_URL before starting the app.");
-    if (data.has_recurring_events) notices.push("Recurring events currently show only their original occurrence.");
+    if (data.has_recurring_events) notices.push("Recurring events are expanded for the next year.");
     elements.notice.textContent = notices.join(" ");
     elements.notice.hidden = notices.length === 0;
     elements.notice.classList.remove("error");
