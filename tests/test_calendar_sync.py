@@ -34,7 +34,7 @@ BEGIN:VEVENT
 UID:recurring
 DTSTART:20261109T140000Z
 DTEND:20261109T150000Z
-RRULE:FREQ=DAILY
+RRULE:FREQ=DAILY;COUNT=3
 SUMMARY:Coding practice
 END:VEVENT
 END:VCALENDAR
@@ -50,9 +50,21 @@ class CalendarSyncTests(TestCase):
             result = sync.get_events()
         self.assertTrue(result["configured"])
         self.assertTrue(result["has_recurring_events"])
+        self.assertEqual(len(result["events"]), 4)
         holiday = next(event for event in result["events"] if event["all_day"])
         self.assertEqual((holiday["start"], holiday["end"]), ("2026-11-09", "2026-11-11"))
         self.assertEqual(holiday["tag"], "Relax")
+
+    def test_recurring_events_are_expanded_with_duration(self) -> None:
+        from ics import Calendar
+
+        sync = CalendarSync(calendar_file="configured.ics")
+        with patch.object(sync, "_read_calendar", return_value=Calendar(ALL_DAY_CALENDAR)):
+            result = sync.get_events(datetime(2026, 11, 10, tzinfo=timezone.utc))
+        coding = [event for event in result["events"] if event["title"] == "Coding practice"]
+        self.assertEqual(len(coding), 3)
+        self.assertEqual(coding[1]["start"], "2026-11-10T14:00:00+00:00")
+        self.assertEqual(coding[1]["end"], "2026-11-10T15:00:00+00:00")
 
     def test_unconfigured_calendar_has_no_events(self) -> None:
         self.assertEqual(
@@ -85,6 +97,16 @@ class CalendarSyncTests(TestCase):
                 datetime(2026, 11, 10, 23, 30, tzinfo=timezone(timedelta(hours=-6)))
             )
         self.assertEqual(result, {"activity": "Relax holiday", "tag": "Relax"})
+
+    def test_recurring_event_can_be_current(self) -> None:
+        from ics import Calendar
+
+        sync = CalendarSync()
+        with patch.object(sync, "_read_calendar", return_value=Calendar(ALL_DAY_CALENDAR)):
+            result = sync.get_current_activity(
+                datetime(2026, 11, 11, 14, 30, tzinfo=timezone.utc)
+            )
+        self.assertEqual(result, {"activity": "Coding practice", "tag": "Coding"})
 
     def test_reads_calendar_file(self) -> None:
         with TemporaryDirectory() as directory:

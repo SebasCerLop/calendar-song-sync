@@ -40,6 +40,10 @@ backend and open the calendar dashboard in your default browser. Keep the
 launcher window open while using the app; press Ctrl+C in that window to stop
 the server.
 
+For the separated base run/build entry points, use
+`app-base\build_app.bat` to install dependencies and validate the project,
+then `app-base\run_app.bat` to start the dashboard.
+
 Choose at most one calendar source. A local file is read from disk; a feed URL
 is fetched when the current-activity endpoint is called. To use one with the
 launcher, set the variable in the same terminal before running the batch file,
@@ -54,9 +58,9 @@ python -m src.main
 
 The dashboard is at `http://127.0.0.1:8000`. If neither calendar variable is
 set, it shows an empty calendar and the activity endpoint returns the free-time
-response. Events are read-only; recurring events currently show only their
-original occurrence. Dates and times are displayed in your browser's local
-timezone.
+response. Events are read-only; recurring events are expanded for roughly the
+previous year and next year. Dates and times are displayed in your browser's
+local timezone.
 
 ### Customize the appearance
 
@@ -70,9 +74,9 @@ site data or using another browser removes or separates these settings.
 
 ### Get calendar events
 
-`GET /api/events` returns the configured-source status, events, and an
-indicator when recurrence rules are present. All-day event end dates are
-exclusive.
+`GET /api/events` returns the configured-source status, expanded events, and an
+indicator when recurrence rules are present. Recurrence expansion is bounded to
+roughly the previous year and next year. All-day event end dates are exclusive.
 
 ### Get the current activity
 
