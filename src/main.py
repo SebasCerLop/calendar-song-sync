@@ -1,4 +1,4 @@
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 import webbrowser
 from pathlib import Path
 
@@ -18,6 +18,15 @@ app.mount("/static", StaticFiles(directory=static_directory), name="static")
 
 class MediaRequest(BaseModel):
     tag: str = Field(min_length=1, max_length=100)
+
+
+MEDIA_QUERIES = {
+    "Coding": "focus instrumental coding music",
+    "Workout": "high energy workout music",
+    "Meeting": "calm professional focus music",
+    "Relax": "calming ambient relaxation music",
+    "Other": "music discovery mix",
+}
 
 
 @app.get("/", include_in_schema=False)
@@ -54,6 +63,32 @@ def trigger_media(request: MediaRequest) -> dict[str, str]:
         "status": "success",
         "tag_received": request.tag,
         "media_url": media_url,
+    }
+
+
+@app.get("/api/recommendations")
+def get_recommendations(tag: str = "Relax") -> dict:
+    """Return privacy-friendly music search recommendations for an activity tag."""
+    normalized_tag = tag if tag in MEDIA_QUERIES else "Other"
+    query = MEDIA_QUERIES[normalized_tag]
+
+    return {
+        "tag": normalized_tag,
+        "query": query,
+        "providers": [
+            {
+                "name": "YouTube Music",
+                "url": f"https://music.youtube.com/search?q={quote(query)}",
+            },
+            {
+                "name": "Spotify",
+                "url": f"https://open.spotify.com/search/{quote(query, safe='')}",
+            },
+            {
+                "name": "Apple Music",
+                "url": f"https://music.apple.com/us/search?term={quote(query)}",
+            },
+        ],
     }
 
 

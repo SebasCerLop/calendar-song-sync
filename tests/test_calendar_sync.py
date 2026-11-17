@@ -5,7 +5,7 @@ from unittest import TestCase
 from unittest.mock import patch
 
 from src.calendar_sync import CalendarSync
-from src.main import MediaRequest, trigger_media
+from src.main import MediaRequest, get_recommendations, trigger_media
 
 
 SAMPLE_CALENDAR = """BEGIN:VCALENDAR
@@ -166,3 +166,19 @@ class CalendarSyncTests(TestCase):
                 trigger_media(MediaRequest(tag="Workout"))
 
         self.assertEqual(error.exception.status_code, 503)
+
+    def test_recommendations_use_supported_activity_tags(self) -> None:
+        response = get_recommendations("Coding")
+
+        self.assertEqual(response["tag"], "Coding")
+        self.assertIn("coding music", response["query"])
+        self.assertEqual(
+            [provider["name"] for provider in response["providers"]],
+            ["YouTube Music", "Spotify", "Apple Music"],
+        )
+
+    def test_recommendations_fall_back_for_unknown_tags(self) -> None:
+        response = get_recommendations("Unknown")
+
+        self.assertEqual(response["tag"], "Other")
+        self.assertIn("discovery mix", response["query"])

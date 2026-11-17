@@ -6,6 +6,7 @@ import {
 } from 'expo-audio';
 import { StatusBar } from 'expo-status-bar';
 import {
+  Linking,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -31,6 +32,21 @@ const dailyTrack = {
     process.env.EXPO_PUBLIC_DAILY_SONG_URL ??
     'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
 };
+
+const mediaProviders = [
+  {
+    name: 'YouTube Music',
+    url: 'https://music.youtube.com/search?q=calming%20ambient%20relaxation%20music',
+  },
+  {
+    name: 'Spotify',
+    url: 'https://open.spotify.com/search/calming%20ambient%20relaxation%20music',
+  },
+  {
+    name: 'Apple Music',
+    url: 'https://music.apple.com/us/search?term=calming%20ambient%20relaxation%20music',
+  },
+];
 
 export default function App() {
   const player = useAudioPlayer(dailyTrack.url, { downloadFirst: true });
@@ -147,6 +163,23 @@ export default function App() {
           {playerStatus.isBuffering ? (
             <Text style={styles.bufferingText}>Loading...</Text>
           ) : null}
+        </View>
+
+        <View style={styles.recommendationsCard}>
+          <Text style={styles.eyebrow}>MEDIA RECOMMENDATIONS ✦</Text>
+          <Text style={styles.recommendationsTitle}>Relax soundtrack</Text>
+          <View style={styles.providerRow}>
+            {mediaProviders.map((provider) => (
+              <Pressable
+                accessibilityRole="link"
+                key={provider.name}
+                onPress={() => Linking.openURL(provider.url)}
+                style={styles.providerButton}
+              >
+                <Text style={styles.providerButtonText}>{provider.name} ↗</Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
 
         <View style={styles.agendaCard}>
@@ -355,6 +388,36 @@ const styles = StyleSheet.create({
     fontSize: 10,
     position: 'absolute',
     right: 86,
+  },
+  recommendationsCard: {
+    backgroundColor: '#fffdf8',
+    borderRadius: 24,
+    padding: 20,
+  },
+  recommendationsTitle: {
+    color: '#23322e',
+    fontSize: 22,
+    fontWeight: '700',
+    marginTop: 6,
+  },
+  providerRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 14,
+  },
+  providerButton: {
+    backgroundColor: '#edf1e8',
+    borderColor: '#d8ddd2',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  providerButtonText: {
+    color: '#52645b',
+    fontSize: 12,
+    fontWeight: '700',
   },
   agendaCard: {
     backgroundColor: '#e7eee4',

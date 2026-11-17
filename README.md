@@ -109,6 +109,14 @@ Request:
 The API opens a YouTube Music search in the machine's system browser. This
 starter does not control playback or authenticate with a music account.
 
+### Get media recommendations
+
+`GET /api/recommendations?tag=Coding`
+
+This endpoint returns privacy-friendly YouTube Music, Spotify, and Apple Music
+search links for supported activity tags: `Coding`, `Workout`, `Meeting`,
+`Relax`, and `Other`.
+
 Interactive API documentation is available at `http://127.0.0.1:8000/docs`
 while the local server is running.
 
