@@ -24,3 +24,30 @@ npm run ios
 
 The iOS command requires macOS for a native simulator/build. Expo Go can be
 used on a physical iOS device from Windows.
+
+## Song of the Day
+
+The base app includes a daily-track card with Play/Pause controls and a
+background-playback audio mode. Set `EXPO_PUBLIC_DAILY_SONG_URL` before
+starting Expo to replace the demo track:
+
+```powershell
+$env:EXPO_PUBLIC_DAILY_SONG_URL = "https://example.com/daily-song.mp3"
+npm start
+```
+
+Use an audio source you are authorized to stream. The default URL is a demo
+track and should be replaced before production use.
+
+## Build for the web
+
+```powershell
+npm run build:web
+npm run preview:web
+```
+
+The static export is written to `mobile/dist`. A GitHub Actions workflow at
+`.github/workflows/deploy-mobile-web.yml` builds and publishes the web app
+through GitHub Pages whenever `app-base` is pushed. Enable Pages in the
+repository settings with **Source: GitHub Actions**. The initial public URL
+will be based on the repository name unless a custom domain is configured.

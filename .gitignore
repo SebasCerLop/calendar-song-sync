@@ -9,3 +9,4 @@ __pycache__/
 *.ics
 node_modules/
 .expo/
+mobile/dist/

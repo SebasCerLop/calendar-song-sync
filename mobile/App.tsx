@@ -1,3 +1,9 @@
+import { useEffect } from 'react';
+import {
+  setAudioModeAsync,
+  useAudioPlayer,
+  useAudioPlayerStatus,
+} from 'expo-audio';
 import { StatusBar } from 'expo-status-bar';
 import {
   Pressable,
@@ -18,7 +24,38 @@ const days = [
   { day: 'SUN', date: '16', hasEvent: true },
 ];
 
+const dailyTrack = {
+  title: 'Daily Sample',
+  artist: 'SoundHelix',
+  url:
+    process.env.EXPO_PUBLIC_DAILY_SONG_URL ??
+    'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+};
+
 export default function App() {
+  const player = useAudioPlayer(dailyTrack.url, { downloadFirst: true });
+  const playerStatus = useAudioPlayerStatus(player);
+
+  useEffect(() => {
+    setAudioModeAsync({
+      playsInSilentMode: true,
+      interruptionMode: 'doNotMix',
+      allowsRecording: false,
+      shouldPlayInBackground: true,
+    }).catch(() => undefined);
+  }, []);
+
+  const toggleDailyTrack = () => {
+    if (playerStatus.playing) {
+      player.pause();
+    } else {
+      if (playerStatus.didJustFinish) {
+        player.seekTo(0);
+      }
+      player.play();
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -85,6 +122,31 @@ export default function App() {
           <Pressable accessibilityRole="button" style={styles.soundtrackButton}>
             <Text style={styles.soundtrackButtonText}>▶  Find my soundtrack  ↗</Text>
           </Pressable>
+        </View>
+
+        <View style={styles.dailyTrackCard}>
+          <View style={styles.dailyTrackCopy}>
+            <Text style={styles.eyebrow}>SONG OF THE DAY ✦</Text>
+            <Text style={styles.dailyTrackTitle}>{dailyTrack.title}</Text>
+            <Text style={styles.dailyTrackArtist}>{dailyTrack.artist}</Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              playerStatus.playing
+                ? 'Pause song of the day'
+                : 'Play song of the day'
+            }
+            onPress={toggleDailyTrack}
+            style={styles.playButton}
+          >
+            <Text style={styles.playButtonText}>
+              {playerStatus.playing ? 'Ⅱ' : '▶'}
+            </Text>
+          </Pressable>
+          {playerStatus.isBuffering ? (
+            <Text style={styles.bufferingText}>Loading...</Text>
+          ) : null}
         </View>
 
         <View style={styles.agendaCard}>
@@ -252,6 +314,47 @@ const styles = StyleSheet.create({
     color: '#35453f',
     fontSize: 13,
     fontWeight: '700',
+  },
+  dailyTrackCard: {
+    alignItems: 'center',
+    backgroundColor: '#e9d7c1',
+    borderRadius: 24,
+    flexDirection: 'row',
+    padding: 20,
+  },
+  dailyTrackCopy: {
+    flex: 1,
+  },
+  dailyTrackTitle: {
+    color: '#23322e',
+    fontSize: 22,
+    fontWeight: '700',
+    marginTop: 6,
+  },
+  dailyTrackArtist: {
+    color: '#6f6258',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  playButton: {
+    alignItems: 'center',
+    backgroundColor: '#526c62',
+    borderRadius: 28,
+    height: 56,
+    justifyContent: 'center',
+    width: 56,
+  },
+  playButtonText: {
+    color: '#fffdf8',
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  bufferingText: {
+    bottom: 8,
+    color: '#6f6258',
+    fontSize: 10,
+    position: 'absolute',
+    right: 86,
   },
   agendaCard: {
     backgroundColor: '#e7eee4',
