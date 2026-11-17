@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   setAudioModeAsync,
   useAudioPlayer,
@@ -33,24 +33,54 @@ const dailyTrack = {
     'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
 };
 
-const mediaProviders = [
-  {
-    name: 'YouTube Music',
-    url: 'https://music.youtube.com/search?q=calming%20ambient%20relaxation%20music',
-  },
-  {
-    name: 'Spotify',
-    url: 'https://open.spotify.com/search/calming%20ambient%20relaxation%20music',
-  },
-  {
-    name: 'Apple Music',
-    url: 'https://music.apple.com/us/search?term=calming%20ambient%20relaxation%20music',
-  },
-];
+type Provider = {
+  name: string;
+  url: string;
+};
+
+type ActivityResponse = {
+  activity: string;
+  tag: string;
+};
+
+type RecommendationResponse = {
+  tag: string;
+  query: string;
+  providers: Provider[];
+};
+
+const apiUrl =
+  process.env.EXPO_PUBLIC_API_URL ?? 'http://127.0.0.1:8000';
+
+const fallbackProviders = (tag: string): Provider[] => {
+  const queryByTag: Record<string, string> = {
+    Coding: 'focus instrumental coding music',
+    Workout: 'high energy workout music',
+    Meeting: 'calm professional focus music',
+    Relax: 'calming ambient relaxation music',
+    Other: 'music discovery mix',
+  };
+  const query = queryByTag[tag] ?? queryByTag.Other;
+  const encoded = encodeURIComponent(query);
+
+  return [
+    { name: 'YouTube Music', url: `https://music.youtube.com/search?q=${encoded}` },
+    { name: 'Spotify', url: `https://open.spotify.com/search/${encoded}` },
+    { name: 'Apple Music', url: `https://music.apple.com/us/search?term=${encoded}` },
+  ];
+};
 
 export default function App() {
   const player = useAudioPlayer(dailyTrack.url, { downloadFirst: true });
   const playerStatus = useAudioPlayerStatus(player);
+  const [activity, setActivity] = useState<ActivityResponse>({
+    activity: 'Free Time',
+    tag: 'Relax',
+  });
+  const [recommendationQuery, setRecommendationQuery] =
+    useState('calming ambient relaxation music');
+  const [recommendationProviders, setRecommendationProviders] =
+    useState<Provider[]>(fallbackProviders('Relax'));
 
   useEffect(() => {
     setAudioModeAsync({
@@ -59,6 +89,41 @@ export default function App() {
       allowsRecording: false,
       shouldPlayInBackground: true,
     }).catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch(`${apiUrl}/api/current-activity`)
+      .then((response) => {
+        if (!response.ok) throw new Error('Activity unavailable');
+        return response.json() as Promise<ActivityResponse>;
+      })
+      .then(async (activityResponse) => {
+        if (cancelled) return;
+
+        setActivity(activityResponse);
+        const recommendationResponse = await fetch(
+          `${apiUrl}/api/recommendations?tag=${encodeURIComponent(activityResponse.tag)}`,
+        ).then((response) => {
+          if (!response.ok) throw new Error('Recommendations unavailable');
+          return response.json() as Promise<RecommendationResponse>;
+        });
+
+        if (cancelled) return;
+        setRecommendationQuery(recommendationResponse.query);
+        setRecommendationProviders(recommendationResponse.providers);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setActivity({ activity: 'Free Time', tag: 'Relax' });
+        setRecommendationQuery('calming ambient relaxation music');
+        setRecommendationProviders(fallbackProviders('Relax'));
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const toggleDailyTrack = () => {
@@ -133,8 +198,10 @@ export default function App() {
             <Text style={styles.live}>LIVE</Text>
           </View>
           <Text style={styles.activityIcon}>♫</Text>
-          <Text style={styles.activityTitle}>Free Time</Text>
-          <Text style={styles.activitySubtitle}>Relax · Your current activity</Text>
+          <Text style={styles.activityTitle}>{activity.activity}</Text>
+          <Text style={styles.activitySubtitle}>
+            {activity.tag} · Your current activity
+          </Text>
           <Pressable accessibilityRole="button" style={styles.soundtrackButton}>
             <Text style={styles.soundtrackButtonText}>▶  Find my soundtrack  ↗</Text>
           </Pressable>
@@ -167,9 +234,11 @@ export default function App() {
 
         <View style={styles.recommendationsCard}>
           <Text style={styles.eyebrow}>MEDIA RECOMMENDATIONS ✦</Text>
-          <Text style={styles.recommendationsTitle}>Relax soundtrack</Text>
+          <Text style={styles.recommendationsTitle}>
+            {recommendationQuery}
+          </Text>
           <View style={styles.providerRow}>
-            {mediaProviders.map((provider) => (
+            {recommendationProviders.map((provider) => (
               <Pressable
                 accessibilityRole="link"
                 key={provider.name}

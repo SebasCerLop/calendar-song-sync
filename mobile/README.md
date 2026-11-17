@@ -39,6 +39,19 @@ npm start
 Use an audio source you are authorized to stream. The default URL is a demo
 track and should be replaced before production use.
 
+## Connect live calendar recommendations
+
+Set `EXPO_PUBLIC_API_URL` to the running Calendar Song Sync API:
+
+```powershell
+$env:EXPO_PUBLIC_API_URL = "http://127.0.0.1:8000"
+npm start
+```
+
+The app loads the current activity and matching provider search links when the
+API is reachable. It keeps the Relax recommendation fallback when the API or
+network is unavailable.
+
 ## Build for the web
 
 ```powershell

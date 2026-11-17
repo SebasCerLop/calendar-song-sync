@@ -5,12 +5,25 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from src.calendar_sync import create_calendar_sync
 
 
 app = FastAPI(title="Calendar Song Sync API", version="1.0")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://127.0.0.1:4173",
+        "http://localhost:4173",
+        "https://sebascerlop.github.io",
+    ],
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
 calendar_sync = create_calendar_sync()
 static_directory = Path(__file__).resolve().parent / "static"
 app.mount("/static", StaticFiles(directory=static_directory), name="static")
