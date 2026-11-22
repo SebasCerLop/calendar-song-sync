@@ -15,15 +15,26 @@ import {
   View,
 } from 'react-native';
 
-const days = [
-  { day: 'MON', date: '10', hasEvent: true },
-  { day: 'TUE', date: '11', hasEvent: false },
-  { day: 'WED', date: '12', hasEvent: true },
-  { day: 'THU', date: '13', hasEvent: false },
-  { day: 'FRI', date: '14', hasEvent: true },
-  { day: 'SAT', date: '15', hasEvent: false },
-  { day: 'SUN', date: '16', hasEvent: true },
-];
+const weekdayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+const buildWeek = () => {
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(today.getDate() - today.getDay());
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+    return {
+      day: weekdayNames[date.getDay()],
+      date: date.getDate(),
+      fullDate: date,
+      hasEvent: [1, 3, 5].includes(date.getDay()),
+    };
+  });
+};
+
+const days = buildWeek();
 
 const dailyTrack = {
   title: 'Daily Sample',
@@ -81,6 +92,11 @@ export default function App() {
     useState('calming ambient relaxation music');
   const [recommendationProviders, setRecommendationProviders] =
     useState<Provider[]>(fallbackProviders('Relax'));
+  const [selectedDate, setSelectedDate] = useState(
+    days.find((item) => item.fullDate.toDateString() === new Date().toDateString())?.date ??
+      new Date().getDate(),
+  );
+  const [activeTab, setActiveTab] = useState<'Today' | 'Calendar' | 'Music'>('Today');
 
   useEffect(() => {
     setAudioModeAsync({
@@ -137,11 +153,30 @@ export default function App() {
     }
   };
 
+  const selectedDay = days.find((item) => item.date === selectedDate) ?? days[0];
+  const selectedAgendaDate = selectedDay.fullDate.toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
+  const selectedMonth = selectedDay.fullDate.toLocaleDateString(undefined, {
+    month: 'long',
+    year: 'numeric',
+  });
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.topBar}>
+          <View style={styles.brandMark}><Text style={styles.brandMarkText}>CSS</Text></View>
+          <Text style={styles.brandName}>Calendar Song Sync</Text>
+          <Pressable accessibilityRole="button" style={styles.profileButton}>
+            <Text style={styles.profileButtonText}>SC</Text>
+          </Pressable>
+        </View>
+
         <View style={styles.header}>
-          <View>
+          <View style={styles.headerCopy}>
             <Text style={styles.eyebrow}>YOUR PERSONAL RHYTHM</Text>
             <Text style={styles.title}>
               Make time for <Text style={styles.titleAccent}>everything.</Text>
@@ -150,14 +185,16 @@ export default function App() {
               A little more intention for every part of your day.
             </Text>
           </View>
-          <Text style={styles.musicMark}>♫</Text>
+          <View style={styles.headerBadge}>
+            <Text style={styles.headerBadgeIcon}>♫</Text>
+          </View>
         </View>
 
         <View style={styles.calendarCard}>
           <View style={styles.cardHeading}>
             <View>
               <Text style={styles.eyebrow}>YOUR CALENDAR ✦</Text>
-              <Text style={styles.month}>November 2026</Text>
+              <Text style={styles.month}>{selectedMonth}</Text>
             </View>
             <Pressable accessibilityRole="button" style={styles.todayButton}>
               <Text style={styles.todayButtonText}>Today</Text>
@@ -170,13 +207,14 @@ export default function App() {
                 accessibilityRole="button"
                 accessibilityLabel={`${item.day} ${item.date}`}
                 key={item.date}
-                style={[styles.day, item.date === '14' && styles.selectedDay]}
+                onPress={() => setSelectedDate(item.date)}
+                style={[styles.day, item.date === selectedDate && styles.selectedDay]}
               >
                 <Text style={styles.dayName}>{item.day}</Text>
                 <Text
                   style={[
                     styles.dayNumber,
-                    item.date === '14' && styles.selectedDayNumber,
+                    item.date === selectedDate && styles.selectedDayNumber,
                   ]}
                 >
                   {item.date}
@@ -197,12 +235,24 @@ export default function App() {
             <Text style={styles.eyebrow}>RIGHT NOW</Text>
             <Text style={styles.live}>LIVE</Text>
           </View>
-          <Text style={styles.activityIcon}>♫</Text>
-          <Text style={styles.activityTitle}>{activity.activity}</Text>
-          <Text style={styles.activitySubtitle}>
-            {activity.tag} · Your current activity
-          </Text>
-          <Pressable accessibilityRole="button" style={styles.soundtrackButton}>
+          <View style={styles.activityHero}>
+            <View style={styles.recordShell}>
+              <View style={styles.recordInner}>
+                <Text style={styles.activityIcon}>♫</Text>
+              </View>
+            </View>
+            <View style={styles.activityCopy}>
+              <Text style={styles.activityTitle}>{activity.activity}</Text>
+              <Text style={styles.activitySubtitle}>
+                {activity.tag} · Your current activity
+              </Text>
+            </View>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={toggleDailyTrack}
+            style={styles.soundtrackButton}
+          >
             <Text style={styles.soundtrackButtonText}>▶  Find my soundtrack  ↗</Text>
           </Pressable>
         </View>
@@ -254,10 +304,38 @@ export default function App() {
         <View style={styles.agendaCard}>
           <Text style={styles.eyebrow}>THE LINEUP</Text>
           <Text style={styles.agendaTitle}>Your day</Text>
-          <Text style={styles.agendaDate}>Saturday, November 14</Text>
+          <Text style={styles.agendaDate}>{selectedAgendaDate}</Text>
           <Text style={styles.emptyAgenda}>
             Nothing planned here yet. A little room to breathe.
           </Text>
+        </View>
+
+        <View style={styles.bottomNav}>
+          {(['Today', 'Calendar', 'Music'] as const).map((tab) => (
+            <Pressable
+              accessibilityRole="button"
+              key={tab}
+              onPress={() => setActiveTab(tab)}
+              style={[styles.navItem, activeTab === tab && styles.activeNavItem]}
+            >
+              <Text
+                style={[
+                  styles.navItemText,
+                  activeTab === tab && styles.activeNavItemText,
+                ]}
+              >
+                {tab === 'Today' ? '◉' : tab === 'Calendar' ? '▦' : '♫'}
+              </Text>
+              <Text
+                style={[
+                  styles.navLabel,
+                  activeTab === tab && styles.activeNavLabel,
+                ]}
+              >
+                {tab}
+              </Text>
+            </Pressable>
+          ))}
         </View>
       </ScrollView>
       <StatusBar style="auto" />
@@ -275,10 +353,67 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingBottom: 40,
   },
+  topBar: {
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  brandMark: {
+    alignItems: 'center',
+    backgroundColor: '#526c62',
+    borderRadius: 12,
+    height: 38,
+    justifyContent: 'center',
+    width: 38,
+  },
+  brandMarkText: {
+    color: '#fffdf8',
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  brandName: {
+    color: '#23322e',
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '800',
+    marginLeft: 10,
+  },
+  profileButton: {
+    alignItems: 'center',
+    backgroundColor: '#e7eee4',
+    borderColor: '#d8ddd2',
+    borderRadius: 18,
+    borderWidth: 1,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  profileButtonText: {
+    color: '#52645b',
+    fontSize: 11,
+    fontWeight: '800',
+  },
   header: {
+    alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingTop: 16,
+  },
+  headerCopy: {
+    flex: 1,
+  },
+  headerBadge: {
+    alignItems: 'center',
+    backgroundColor: '#e9d7c1',
+    borderRadius: 28,
+    height: 56,
+    justifyContent: 'center',
+    marginLeft: 12,
+    transform: [{ rotate: '8deg' }],
+    width: 56,
+  },
+  headerBadgeIcon: {
+    color: '#9b6b4d',
+    fontSize: 28,
   },
   eyebrow: {
     color: '#72806b',
@@ -388,10 +523,36 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1.5,
   },
+  activityHero: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    marginTop: 18,
+  },
+  recordShell: {
+    alignItems: 'center',
+    backgroundColor: '#40564e',
+    borderColor: '#d7bd9a',
+    borderRadius: 46,
+    borderWidth: 4,
+    height: 92,
+    justifyContent: 'center',
+    width: 92,
+  },
+  recordInner: {
+    alignItems: 'center',
+    backgroundColor: '#e5c4a4',
+    borderRadius: 28,
+    height: 56,
+    justifyContent: 'center',
+    width: 56,
+  },
   activityIcon: {
-    color: '#e5c4a4',
-    fontSize: 40,
-    marginTop: 20,
+    color: '#526c62',
+    fontSize: 26,
+  },
+  activityCopy: {
+    flex: 1,
+    marginLeft: 16,
   },
   activityTitle: {
     color: '#fffdf8',
@@ -509,5 +670,40 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     marginTop: 26,
+  },
+  bottomNav: {
+    alignSelf: 'center',
+    backgroundColor: '#23322e',
+    borderRadius: 22,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    width: '100%',
+  },
+  navItem: {
+    alignItems: 'center',
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+  },
+  activeNavItem: {
+    backgroundColor: '#526c62',
+  },
+  navItemText: {
+    color: '#9fb0a7',
+    fontSize: 17,
+  },
+  activeNavItemText: {
+    color: '#fffdf8',
+  },
+  navLabel: {
+    color: '#9fb0a7',
+    fontSize: 9,
+    fontWeight: '700',
+    marginTop: 3,
+  },
+  activeNavLabel: {
+    color: '#fffdf8',
   },
 });
