@@ -13,6 +13,8 @@ import {
   StyleSheet,
   Text,
   View,
+  Animated,
+  Easing,
 } from 'react-native';
 
 const weekdayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -37,11 +39,11 @@ const buildWeek = () => {
 const days = buildWeek();
 
 const dailyTrack = {
-  title: 'Daily Sample',
-  artist: 'SoundHelix',
+  title: 'Outfoxing',
+  artist: 'Daily Demo Track',
   url:
     process.env.EXPO_PUBLIC_DAILY_SONG_URL ??
-    'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+    'https://mdn.github.io/webaudio-examples/audio-basics/outfoxing.mp3',
 };
 
 type Provider = {
@@ -97,6 +99,28 @@ export default function App() {
       new Date().getDate(),
   );
   const [activeTab, setActiveTab] = useState<'Today' | 'Calendar' | 'Music'>('Today');
+  const auroraFloat = useState(() => new Animated.Value(0))[0];
+  const auroraSpin = useState(() => new Animated.Value(0))[0];
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(auroraFloat, {
+        toValue: 1,
+        duration: 9000,
+        easing: Easing.inOut(Easing.sin),
+        useNativeDriver: false,
+      }),
+    ).start();
+
+    Animated.loop(
+      Animated.timing(auroraSpin, {
+        toValue: 1,
+        duration: 24000,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      }),
+    ).start();
+  }, [auroraFloat, auroraSpin]);
 
   useEffect(() => {
     setAudioModeAsync({
@@ -166,7 +190,69 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.liveBackground} pointerEvents="none">
+        <Animated.View
+          style={[
+            styles.auroraOrb,
+            styles.auroraPurple,
+            {
+              transform: [
+                {
+                  translateY: auroraFloat.interpolate({
+                    inputRange: [0, 0.5, 1],
+                    outputRange: [-18, 28, -18],
+                  }),
+                },
+                {
+                  translateX: auroraFloat.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-20, 34],
+                  }),
+                },
+                {
+                  rotate: auroraSpin.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', '360deg'],
+                  }),
+                },
+              ],
+            },
+          ]}
+        />
+        <Animated.View
+          style={[
+            styles.auroraOrb,
+            styles.auroraOrange,
+            {
+              transform: [
+                {
+                  translateY: auroraFloat.interpolate({
+                    inputRange: [0, 0.5, 1],
+                    outputRange: [24, -24, 24],
+                  }),
+                },
+              ],
+            },
+          ]}
+        />
+        <Animated.View
+          style={[
+            styles.auroraOrb,
+            styles.auroraGreen,
+            {
+              transform: [
+                {
+                  scale: auroraFloat.interpolate({
+                    inputRange: [0, 0.5, 1],
+                    outputRange: [0.92, 1.12, 0.92],
+                  }),
+                },
+              ],
+            },
+          ]}
+        />
+      </View>
+      <ScrollView contentContainerStyle={styles.container} style={styles.scrollView}>
         <View style={styles.topBar}>
           <View style={styles.brandMark}><Text style={styles.brandMarkText}>CSS</Text></View>
           <Text style={styles.brandName}>Calendar Song Sync</Text>
@@ -346,7 +432,46 @@ export default function App() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f5f1e8',
+    backgroundColor: '#b9e4de',
+    overflow: 'hidden',
+  },
+  liveBackground: {
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  auroraOrb: {
+    borderRadius: 240,
+    position: 'absolute',
+  },
+  auroraPurple: {
+    backgroundColor: '#8a62ff',
+    height: 330,
+    left: -170,
+    opacity: 0.78,
+    top: 50,
+    width: 330,
+  },
+  auroraOrange: {
+    backgroundColor: '#ff8e72',
+    bottom: 180,
+    height: 280,
+    opacity: 0.72,
+    right: -150,
+    width: 280,
+  },
+  auroraGreen: {
+    backgroundColor: '#55d6ae',
+    bottom: -130,
+    height: 360,
+    left: -90,
+    opacity: 0.88,
+    width: 360,
+  },
+  scrollView: {
+    zIndex: 2,
   },
   container: {
     gap: 18,
@@ -359,7 +484,10 @@ const styles = StyleSheet.create({
   },
   brandMark: {
     alignItems: 'center',
-    backgroundColor: '#526c62',
+    backgroundColor: '#173f52',
+    borderColor: 'rgba(255,255,255,0.62)',
+    borderWidth: 1,
+    boxShadow: '0 12px 24px rgba(20, 92, 102, 0.28)',
     borderRadius: 12,
     height: 38,
     justifyContent: 'center',
@@ -443,8 +571,11 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   calendarCard: {
-    backgroundColor: '#fffdf8',
+    backgroundColor: 'rgba(255, 253, 248, 0.84)',
+    borderColor: 'rgba(255,255,255,0.88)',
+    borderWidth: 1,
     borderRadius: 24,
+    boxShadow: '0 18px 42px rgba(39, 96, 101, 0.18)',
     padding: 20,
   },
   cardHeading: {
@@ -482,7 +613,13 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   selectedDay: {
-    backgroundColor: '#526c62',
+    backgroundColor: '#173f52',
+    boxShadow: '0 10px 22px rgba(23, 63, 82, 0.32)',
+    transform: [{ translateY: -3 }],
+    shadowColor: '#173f52',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
   },
   dayName: {
     color: '#8a968e',
@@ -509,8 +646,11 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   activityCard: {
-    backgroundColor: '#526c62',
+    backgroundColor: 'rgba(24, 70, 94, 0.92)',
+    borderColor: 'rgba(161, 240, 220, 0.48)',
+    borderWidth: 1,
     borderRadius: 24,
+    boxShadow: '0 22px 48px rgba(20, 74, 88, 0.34)',
     padding: 24,
   },
   liveRow: {
@@ -530,12 +670,13 @@ const styles = StyleSheet.create({
   },
   recordShell: {
     alignItems: 'center',
-    backgroundColor: '#40564e',
-    borderColor: '#d7bd9a',
+    backgroundColor: '#203b62',
+    borderColor: '#ffc4b0',
     borderRadius: 46,
     borderWidth: 4,
     height: 92,
     justifyContent: 'center',
+    boxShadow: '0 16px 30px rgba(255, 175, 139, 0.34)',
     width: 92,
   },
   recordInner: {
@@ -580,8 +721,11 @@ const styles = StyleSheet.create({
   },
   dailyTrackCard: {
     alignItems: 'center',
-    backgroundColor: '#e9d7c1',
+    backgroundColor: 'rgba(255, 205, 171, 0.88)',
+    borderColor: 'rgba(255,255,255,0.72)',
+    borderWidth: 1,
     borderRadius: 24,
+    boxShadow: '0 18px 38px rgba(146, 91, 137, 0.18)',
     flexDirection: 'row',
     padding: 20,
   },
@@ -620,8 +764,11 @@ const styles = StyleSheet.create({
     right: 86,
   },
   recommendationsCard: {
-    backgroundColor: '#fffdf8',
+    backgroundColor: 'rgba(255, 253, 248, 0.82)',
+    borderColor: 'rgba(255,255,255,0.86)',
+    borderWidth: 1,
     borderRadius: 24,
+    boxShadow: '0 18px 38px rgba(73, 95, 131, 0.16)',
     padding: 20,
   },
   recommendationsTitle: {
@@ -650,8 +797,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   agendaCard: {
-    backgroundColor: '#e7eee4',
+    backgroundColor: 'rgba(225, 241, 227, 0.82)',
+    borderColor: 'rgba(255,255,255,0.72)',
+    borderWidth: 1,
     borderRadius: 24,
+    boxShadow: '0 18px 38px rgba(65, 131, 116, 0.16)',
     padding: 24,
   },
   agendaTitle: {
